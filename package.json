@@ -1,0 +1,17 @@
+{
+  "name": "taas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "request": "^2.79.0",
+    "twly": "^3.3.0",
+    "unzip": "^0.1.11"
+  }
+}
