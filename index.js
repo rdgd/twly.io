@@ -6,13 +6,77 @@ const request = require('request');
 const fs = require('fs');
 const unzip = require('unzip');
 
+function gitAccountRepoMeta (name, type = 'users') {
+  return new Promise((accept, reject) => {
+    var request = require('request');
+    var options = {
+      url: `https://api.github.com/${type}/${name}/repos`,
+      headers: { 'User-Agent': 'twly' }
+    };
+    request(options, function (error, response, body) {
+      (!error && response.statusCode === 200 && accept(JSON.parse(body))) || reject(error);
+    });
+  });
+}
+
+function makeRepoArchiveUrls (repoMeta) {
+  return new Map(repoMeta.map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
+}
+
+function downloadRepos (repoNameUrlMap) {
+  let promises = [];
+  let tmpFolder = './tmp';
+
+  repoNameUrlMap.forEach((v, k) => {
+    var options = {
+      url: v.archiveUrl,
+      headers: { 'User-Agent': 'twly' }
+    };
+    let p = new Promise((resolve, reject) => {
+      request(options, function (error, response, body) { if (error) { throw error; } })
+      .pipe(unzip.Extract({ path: tmpFolder }))
+      .on('error', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); })
+      .on('finish', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); });
+    });
+    promises.push(p);
+  });
+  return Promise.all(promises);
+}
+
+function runTwly (paths) {
+  let reports = [];
+  paths = new Map(paths);
+  paths.forEach((v, k) => {
+    let p = new Promise((resolve, reject) => {
+      twly({
+        minLines: 3,
+        files: `${v}/**/*.*`,
+        failureThreshold: 95,
+        logLevel: 'FATAL'
+      }).then((report) => resolve(report));
+    });
+    reports.push(p);
+  });
+  
+  return Promise.all(reports);
+}
+
+function parsePost (req) {
+  return new Promise((accept, reject) => {
+    var body = '';
+    req.on('data', (chunk) => body += chunk );
+    req.on('end', () => accept(qs.parse(body)));
+  })
+}
+
 function router (req, res) {
   switch (req.url) {
     case '/git/user':
       return parsePost(req)
-               .then((params) => gitUserRepoMeta(params.name))
+               .then((params) => gitAccountRepoMeta(params.name))
                .then(makeRepoArchiveUrls)
-               .then(downloadRepos);
+               .then(downloadRepos)
+               .then(runTwly);
       break;
     case '/git/account':
       return 'analyze for a whole git account';
@@ -23,65 +87,11 @@ function router (req, res) {
   }
 }
 
-function gitUserRepoMeta (name) {
-  return new Promise((accept, reject) => {
-    var request = require('request');
-    var options = {
-      url: 'https://api.github.com/users/rdgd/repos',
-      headers: {
-        'User-Agent': 'twly'
-      }
-    };
-    request(options, function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        accept(JSON.parse(body)); // Show the HTML for the Google homepage.
-      }
-    });
-  });
-}
-
-function makeRepoArchiveUrls (repoMeta) {
-  return new Map(repoMeta.map((m) => [ m.name, `https://github.com/${m.full_name}/archive/${m.default_branch}.zip` ]));
-}
-
-function downloadRepos (repoNameUrlMap) {
-  let promises = [];
-  repoNameUrlMap.forEach((v, k) => {
-    var options = {
-      url: v,
-      headers: {
-        'User-Agent': 'twly'
-      }
-    };
-    request(options, function (error, response, body) {
-      if (error) { throw error; }
-    })
-    .pipe(unzip.Extract({ path: `./tmp/${k}` }))
-    //.pipe(fs.createWriteStream(`./tmp/${k}.zip`))
-    .on('finish', () => {
-      console.log('hey!');
-    });
-  });
-}
-
-function parsePost (req) {
-  return new Promise((accept, reject) => {
-    var body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', () => {
-      accept(qs.parse(body));
-    });
-  })
-}
-
-
 http.createServer((req, res) => {
   if (req.method === 'POST') {
     router(req)
-      .then((params) => {
-        res.write(JSON.stringify(params));
+      .then((data) => {
+        res.write(JSON.stringify(data));
         res.end();
       })
   } else {
