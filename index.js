@@ -20,7 +20,7 @@ function gitAccountRepoMeta (name, type = 'users') {
 }
 
 function makeRepoArchiveUrls (repoMeta) {
-  return new Map(repoMeta.map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
+  return new Map(repoMeta.filter((m) => m.fork === false).map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
 }
 
 function downloadRepos (repoNameUrlMap) {
@@ -34,9 +34,9 @@ function downloadRepos (repoNameUrlMap) {
     };
     let p = new Promise((resolve, reject) => {
       request(options, function (error, response, body) { if (error) { throw error; } })
-      .pipe(unzip.Extract({ path: tmpFolder }))
-      .on('error', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); })
-      .on('finish', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); });
+        .pipe(unzip.Extract({ path: tmpFolder }))
+          .on('error', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); })
+          .on('finish', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); });
     });
     promises.push(p);
   });
@@ -53,7 +53,10 @@ function runTwly (paths) {
         files: `${v}/**/*.*`,
         failureThreshold: 95,
         logLevel: 'FATAL'
-      }).then((report) => resolve(report));
+      }).then((report) => {
+        report.name = v;
+        resolve(report);
+      });
     });
     reports.push(p);
   });
@@ -89,13 +92,16 @@ function router (req, res) {
 
 http.createServer((req, res) => {
   if (req.method === 'POST') {
+   // res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
     router(req)
       .then((data) => {
         res.write(JSON.stringify(data));
         res.end();
       })
+      .catch((err) => {
+        console.log(err);
+      });
   } else {
-    res.write('meh');
-    res.end();
+    fs.createReadStream('./index.html').pipe(res);
   }
 }).listen(8080);
