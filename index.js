@@ -101,6 +101,8 @@ http.createServer((req, res) => {
       .catch((err) => {
         console.log(err);
       });
+  } else if (/^\/assets\//.test(req.url)) {
+    fs.createReadStream('.' + req.url).pipe(res);
   } else {
     fs.createReadStream('./index.html').pipe(res);
   }
