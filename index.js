@@ -92,15 +92,15 @@ function router (req, res) {
 
 http.createServer((req, res) => {
   if (req.method === 'POST') {
-   // res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
-    router(req)
-      .then((data) => {
-        res.write(JSON.stringify(data));
-        res.end();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
+    // router(req)
+    //   .then((data) => {
+    //     res.write(JSON.stringify(data));
+    //     res.end();
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //   });
   } else if (/^\/assets\//.test(req.url)) {
     fs.createReadStream('.' + req.url).pipe(res);
   } else {
