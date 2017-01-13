@@ -14,7 +14,7 @@ var wss = new WebSocketServer({ port: 8081 });
 wss.on('connection', function connection(ws) {
   let userId = parseUserIdFromCookie(ws.upgradeReq.headers.cookie);
   userWebsockets[userId] = ws;
-  ws.on('message', function incoming(message) {
+  ws.on('message', (message) => {
     console.log('received: %s', message);
   });
  
@@ -33,7 +33,6 @@ function sendWsMessage (userId, title, payload = {}) {
 
 function gitAccountRepoMeta (name, type = 'users') {
   return new Promise((accept, reject) => {
-    var request = require('request');
     var options = {
       url: `https://api.github.com/${type}/${name}/repos`,
       headers: { 'User-Agent': 'twly' }
@@ -75,11 +74,12 @@ function downloadRepos (repoNameUrlMap, userId) {
   return Promise.all(promises);
 }
 
-function runTwly (paths) {
+function runTwly (paths, userId) {
   let reports = [];
   paths = new Map(paths);
   paths.forEach((v, k) => {
     let p = new Promise((resolve, reject) => {
+      sendWsMessage(userId, 'Analyzing repo', { name: k });
       twly({
         minLines: 3,
         files: `${v}/**/*.*`,
@@ -87,12 +87,13 @@ function runTwly (paths) {
         logLevel: 'FATAL'
       }).then((report) => {
         report.name = v;
+        sendWsMessage(userId, 'Repo analyzed', { name: k, report: report });
         resolve(report);
       });
     });
     reports.push(p);
   });
-  
+
   return Promise.all(reports);
 }
 
@@ -122,8 +123,13 @@ function router (req, res) {
                })
                .then((repoPaths) => { 
                   sendWsMessage(userId, 'Starting analysis', repoPaths);
-                  return runTwly(repoPaths);
+                  return runTwly(repoPaths, userId);
+                })
+                .then((reports) => {
+                  sendWsMessage(userId, 'All repos analyzed', { reports: reports });
+                  return reports;
                 });
+
       break;
     }
     case '/git/org':

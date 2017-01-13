@@ -10,6 +10,7 @@ TODO:
 * Websockets! 
 * * To pipe down information as soon as it's ready. Repo by repo basis
 * * Updates/progress regarding the analysis taking place (takes a fuckload of time)
+* Visualize Websockets progress on the front end
 * Analyzing entire accounts
 * GitHub API registration so as to not be throttled
 * Allow OAuth so that private accounts can be analyzed
