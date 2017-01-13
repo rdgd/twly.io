@@ -26,7 +26,7 @@ function validateForm () {
 function routeWSMessage (msg) {
   let data = JSON.parse(msg.data);
   console.log(data);
-  switch (data.title) {
+  switch (data.title.toLowerCase()) {
     case 'connected': {
       console.log('says its connected1!');
       break;
@@ -35,10 +35,26 @@ function routeWSMessage (msg) {
       console.log(data.payload);
       break;
     }
-    case 'repos downloaded': {
+    case 'downloading repos': {
+      console.log(data.payload);
       break;
     }
-    case 'analysis started': {
+    case 'downloading repo': {
+      console.log(data.payload);
+      break;
+    }
+    case 'repo download success': {
+      console.log(data.payload);
+      break;
+    }
+    case 'error downloading repo': {
+      console.log(data.payload);
+      break;
+    }
+    case 'starting analysis': {
+      break;
+    }  
+    case 'analyzing repo': {
       break;
     }
     case 'repo analyzed': {

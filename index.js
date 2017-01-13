@@ -110,25 +110,25 @@ function router (req, res) {
     case '/git/user': {
       let userId = parseUserIdFromCookie(req.headers.cookie);  
       return parsePost(req)
-               .then((params) => {
-                 return gitAccountRepoMeta(params.name).then((meta) => {
-                   sendWsMessage(userId, 'repos found', meta);
-                   return meta;
-                 });
-               })
-               .then(makeRepoArchiveUrls)
-               .then((urls) => {
-                 sendWsMessage(userId, 'Downloading repos', urls);
-                 return downloadRepos(urls, userId);
-               })
-               .then((repoPaths) => { 
-                  sendWsMessage(userId, 'Starting analysis', repoPaths);
-                  return runTwly(repoPaths, userId);
-                })
-                .then((reports) => {
-                  sendWsMessage(userId, 'All repos analyzed', { reports: reports });
-                  return reports;
-                });
+        .then((params) => {
+          return gitAccountRepoMeta(params.name).then((meta) => {
+            sendWsMessage(userId, 'repos found', meta);
+            return meta;
+          });
+        })
+        .then(makeRepoArchiveUrls)
+        .then((urls) => {
+          sendWsMessage(userId, 'Downloading repos', urls);
+          return downloadRepos(urls, userId);
+        })
+        .then((repoPaths) => { 
+          sendWsMessage(userId, 'Starting analysis', repoPaths);
+          return runTwly(repoPaths, userId);
+        })
+        .then((reports) => {
+          sendWsMessage(userId, 'All repos analyzed', { reports: reports });
+          return reports;
+        });
 
       break;
     }
