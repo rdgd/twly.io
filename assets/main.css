@@ -120,7 +120,8 @@ fieldset {
   display: initial; }
 
 .expander {
-  margin-left: 10px; }
+  margin-left: 10px;
+  cursor: pointer; }
 
 .collapsed {
   display: none; }

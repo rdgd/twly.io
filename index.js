@@ -5,6 +5,31 @@ const qs = require('querystring');
 const request = require('request');
 const fs = require('fs');
 const unzip = require('unzip');
+const uuid = require('uuid/v4');
+const WebSocketServer = require('ws').Server;
+var userWebsockets = {};
+
+var wss = new WebSocketServer({ port: 8081 });
+ 
+wss.on('connection', function connection(ws) {
+  let userId = parseUserIdFromCookie(ws.upgradeReq.headers.cookie);
+  userWebsockets[userId] = ws;
+  ws.on('message', function incoming(message) {
+    console.log('received: %s', message);
+  });
+ 
+  sendWsMessage(userId, 'connected');
+});
+
+function parseUserIdFromCookie (cookie) {
+  let userId = /twly\-uuid=([^;]+)/.exec(cookie)[1];
+  return userId;
+}
+
+function sendWsMessage (userId, title, payload = {}) {
+  let ws = userWebsockets[userId];
+  return ws.send(JSON.stringify({ title, payload }));
+}
 
 function gitAccountRepoMeta (name, type = 'users') {
   return new Promise((accept, reject) => {
@@ -23,7 +48,7 @@ function makeRepoArchiveUrls (repoMeta) {
   return new Map(repoMeta.filter((m) => m.fork === false).map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
 }
 
-function downloadRepos (repoNameUrlMap) {
+function downloadRepos (repoNameUrlMap, userId) {
   let promises = [];
   let tmpFolder = './tmp';
 
@@ -33,10 +58,17 @@ function downloadRepos (repoNameUrlMap) {
       headers: { 'User-Agent': 'twly' }
     };
     let p = new Promise((resolve, reject) => {
+      sendWsMessage(userId, 'Downloading repo', { name: k });
       request(options, function (error, response, body) { if (error) { throw error; } })
         .pipe(unzip.Extract({ path: tmpFolder }))
-          .on('error', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); })
-          .on('finish', () => { resolve([k, `${tmpFolder}/${k}-${v.branch}`]); });
+          .on('error', () => {
+            sendWsMessage(userId, 'Error downloading repo', { name: k });
+            resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
+          })
+          .on('finish', () => {
+            sendWsMessage(userId, 'Repo download success', { name: k });
+            resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
+          });
     });
     promises.push(p);
   });
@@ -51,7 +83,7 @@ function runTwly (paths) {
       twly({
         minLines: 3,
         files: `${v}/**/*.*`,
-        failureThreshold: 95,
+        failureThreshold: 100,
         logLevel: 'FATAL'
       }).then((report) => {
         report.name = v;
@@ -74,14 +106,27 @@ function parsePost (req) {
 
 function router (req, res) {
   switch (req.url) {
-    case '/git/user':
+    case '/git/user': {
+      let userId = parseUserIdFromCookie(req.headers.cookie);  
       return parsePost(req)
-               .then((params) => gitAccountRepoMeta(params.name))
+               .then((params) => {
+                 return gitAccountRepoMeta(params.name).then((meta) => {
+                   sendWsMessage(userId, 'repos found', meta);
+                   return meta;
+                 });
+               })
                .then(makeRepoArchiveUrls)
-               .then(downloadRepos)
-               .then(runTwly);
+               .then((urls) => {
+                 sendWsMessage(userId, 'Downloading repos', urls);
+                 return downloadRepos(urls, userId);
+               })
+               .then((repoPaths) => { 
+                  sendWsMessage(userId, 'Starting analysis', repoPaths);
+                  return runTwly(repoPaths);
+                });
       break;
-    case '/git/account':
+    }
+    case '/git/org':
       return 'analyze for a whole git account';
       break;
     default:
@@ -92,18 +137,29 @@ function router (req, res) {
 
 http.createServer((req, res) => {
   if (req.method === 'POST') {
-    res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
-    // router(req)
-    //   .then((data) => {
-    //     res.write(JSON.stringify(data));
-    //     res.end();
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    //   });
+    // res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
+    router(req)
+      .then((data) => {
+        res.write(JSON.stringify(data));
+        res.end();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   } else if (/^\/assets\//.test(req.url)) {
     fs.createReadStream('.' + req.url).pipe(res);
+  } else if (/^\/third_party\//.test(req.url)) {
+    let r = /^\/third_party\/([^\?]+)/.exec(req.url);
+    // We have to strip the get params from the URL that fontawesome includes, and also they assume case-insensitive filesystem.
+    fs.createReadStream('./node_modules/' + r[1].toLowerCase()).pipe(res);
   } else {
+    if (!parseUserIdFromCookie(req.headers.cookie)) {
+      let userId = uuid();
+      res.writeHead(200, {
+        'Set-Cookie': `twly-uuid=${userId}`,
+      });
+    }
+    // userWebsockets[userId] = {};
     fs.createReadStream('./index.html').pipe(res);
   }
 }).listen(8080);
