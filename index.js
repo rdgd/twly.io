@@ -90,7 +90,7 @@ function runTwly (paths, userId) {
       twly({
         minLines: 3,
         files: `${v}/**/*.*`,
-        failureThreshold: 95,
+        failureThreshold: 100,
         logLevel: 'FATAL'
       }).then((report) => {
         report.name = v;

@@ -1,11 +1,8 @@
 TODO:
-* show pass or fail next to repo name with icon
 * Insert commas into numbers in the thousands +
 * Write Tests
 * Slick accordian animation for expand/collapse details
 * Help icons with tooltips to explain options
-* Interface to view past queries
-* Loading past queries
 * Analyzing entire accounts
 * GitHub API registration so as to not be throttled
 * Allow OAuth so that private accounts can be analyzed

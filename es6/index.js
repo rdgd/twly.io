@@ -170,6 +170,7 @@ function routeWSMessage (msg) {
 function runAnalysis (e) {
   let progress = document.getElementById('progress');
   let results = document.getElementById('results');
+  let submitBtn = document.getElementById('submit');
   let selected = Array.from(document.querySelectorAll('[name="accountType"]')).filter((i) => i.checked)[0];
   let http = new XMLHttpRequest();
   let url = selected.id === 'user' ? '/analyze/user' : '/analyze/org';
@@ -177,7 +178,7 @@ function runAnalysis (e) {
   let params = "name=" + name.value;
   http.responseType = 'json';
   http.open("POST", url, true);
-
+  submitBtn.setAttribute('disabled', '');
   // Send the proper header information along with the request
   http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
@@ -186,6 +187,7 @@ function runAnalysis (e) {
   http.onreadystatechange = (e) => { // Call a function when the state changes.
     if( http.readyState == 4 && http.status == 200) {
       storeResults(name.value, http.response);
+      submitBtn.removeAttribute('disabled');
       displayResults(http.response);
     }
   }
@@ -215,7 +217,7 @@ function checkGitAccountExists () {
   
   http.responseType = 'json';
   http.open('GET', url, true);
-  showProgress(validationIcon);
+
   http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   http.onreadystatechange = function () { //Call a function when the state changes.
     if(http.readyState === 4) {
@@ -245,11 +247,6 @@ function showInvalid (i) {
   submitBtn.setAttribute('disabled', '');
 }
 
-function showProgress (i) {
- // i.classList = '';
- // i.classList.add('show', 'validation-icon', 'fa', 'fa-spin', 'fa-circle-o-notch');
-}
-
 function displayNoRepoMessage () {
   let resultContainer = document.getElementById('results');
   let msg = document.createElement('h2');
@@ -273,6 +270,10 @@ function displayResults (results) {
     let tableHeaders = document.createElement('tr');
     let row = document.createElement('tr');
     let resultWrapClass = r.pass ? 'pass' : 'fail';
+    let icon = document.createElement('i');
+    let iconClass = r.pass ? 'fa-check-circle' : 'fa-times-circle';
+    icon.classList.add('fa');
+    icon.classList.add(iconClass);
 
     resultWrap.classList.add(resultWrapClass, 'result-wrap');
     expandIcon.classList.add('fa', 'fa-plus-square', 'expander');
@@ -280,6 +281,7 @@ function displayResults (results) {
 
     repoName.textContent = r.prettyName;
     resultHeading.appendChild(repoName);
+    resultHeading.appendChild(icon);
     summaryHeading.textContent = 'Summary';
     detailsHeading.textContent = 'Details';
 
