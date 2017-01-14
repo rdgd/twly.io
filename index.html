@@ -14,47 +14,63 @@
     <h1>TWLY GitHub Analyzer</h1>
   </div>
   <div class="card">
-    <form>
-      <fieldset>
-        <div id="name-wrap">
-          <h4>Account Name</h4>
-          <input id="name" type="text" name="name">
-        </div>
-        <i class="validation-icon fa"></i>
-      </fieldset>
-      <fieldset class="radios">
-        <h4>Account Type</h4>
-        <div class="fs-wrap">
-          <fieldset class="selected">
-            <input id="user" type="radio" checked name="accountType" />
-            <label for="user">User</label>
-          </fieldset>
-          <fieldset>
-            <input id="organization" type="radio" name="accountType" />
-            <label for="organization">Organization</label>
-          </fieldset>
-        </div>
-      </fieldset>
-      <fieldset class="radios">
-        <h4>Repo Analysis</h4>
-        <div class="fs-wrap">
-          <fieldset class="selected">
-            <input id="independent" checked type="radio" name="analysisType" />
-            <label for="independent">Independent</label>
-          </fieldset>
-          <fieldset disabled>
-            <input id="together" type="radio" name="analysisType" />
-            <label for="together">Together</label>
-          </fieldset>
-        </div>
-      </fieldset>
-      <hr>
-      <br>
-      <button type="button" disabled id="submit">Analyze!</button>
-    </form>
+    <section id="history-wrap" class="hide">
+      <i id="search-icon" class="fa fa-search"></i>
+      <h3>History</h3>
+    </section>
+    <section id="search-wrap">
+      <i id="history-icon" class="fa fa-history" aria-hidden="true"></i>
+      <h3>Search</h3>
+      <form>
+        <fieldset>
+          <div id="name-wrap">
+            <h4>Account Name</h4>
+            <input id="name" type="text" name="name">
+          </div>
+          <i class="validation-icon fa"></i>
+        </fieldset>
+        <fieldset class="radios">
+          <h4>Account Type</h4>
+          <div class="fs-wrap">
+            <fieldset class="selected">
+              <input id="user" type="radio" checked name="accountType" value="users" />
+              <label for="user">User</label>
+            </fieldset>
+            <fieldset>
+              <input id="organization" type="radio" name="accountType" value="orgs" />
+              <label for="organization">Organization</label>
+            </fieldset>
+          </div>
+        </fieldset>
+        <fieldset class="radios">
+          <h4>Repo Analysis</h4>
+          <div class="fs-wrap">
+            <fieldset class="selected">
+              <input id="independent" checked type="radio" name="analysisType" />
+              <label for="independent">Independent</label>
+            </fieldset>
+            <fieldset disabled>
+              <input id="together" type="radio" name="analysisType" />
+              <label for="together">Together</label>
+            </fieldset>
+          </div>
+        </fieldset>
+        <hr>
+        <br>
+        <button type="button" disabled id="submit">Analyze!</button>
+      </form>
+    </section>
   </div>
 </section>
-<section id="results" class="card">
+<section id="progress" class="card hide">
+  <h4 id="progress-message"></h4>
+  <div class="meter animate" style="width: 400px;">
+    <span id="pct" style="width:0%">
+      <span></span>
+    </span>
+  </div>
+</section>
+<section id="results" class="card hide">
 </section>
 <footer>
 </footer>

@@ -1,12 +1,16 @@
 document.addEventListener('DOMContentLoaded', setHooks);
 
-function setHooks () { 
+function setHooks () {
+  let historyIcon = document.getElementById('history-icon');
+  let searchIcon = document.getElementById('search-icon');
   let nameInput = document.getElementById('name');
   let submitBtn = document.getElementById('submit');
   let radios = Array.from(document.querySelectorAll('[type="radio"]'));
   let ws = new WebSocket('ws://localhost:8081/events');
   ws.onmessage = routeWSMessage;
 
+  historyIcon.addEventListener('click', showHistory);
+  searchIcon.addEventListener('click', showSearch);
   nameInput.addEventListener('blur', validateForm);
   submitBtn.addEventListener('click', runAnalysis);
   radios.forEach((r) => {
@@ -15,52 +19,146 @@ function setHooks () {
       let nextEl = e.target.parentElement.nextElementSibling;
       (prevEl && prevEl.type === 'fieldset') ? prevEl.classList.remove('selected') : nextEl.classList.remove('selected');
       e.target.parentElement.classList.add('selected');
+      e.currentTarget.name === 'accountType' && checkGitAccountExists();
     });
   });
+}
+
+function showHistory () {
+  let searchWrap = document.getElementById('search-wrap');
+  let historyWrap = document.getElementById('history-wrap');
+  historyWrap.classList.remove('hide');
+  searchWrap.classList.add('hide');
+  populateHistory();
+}
+
+function showSearch () {
+  let searchWrap = document.getElementById('search-wrap');
+  let historyWrap = document.getElementById('history-wrap');
+  historyWrap.classList.add('hide');
+  searchWrap.classList.remove('hide');
+}
+
+function populateHistory () {
+  let twly = localStorage.getItem('twly');
+  if (!twly) { return false; }
+  twly = JSON.parse(twly);
+  let historyWrap = document.getElementById('history-wrap');
+  let tbl = document.getElementById('history-table');
+  if (tbl) {
+    tbl.parentElement.removeChild(tbl);
+  }
+  tbl = document.createElement('table');
+  let headers = document.createElement('tr');
+  let nameHeader = document.createElement('th');
+  let timeHeader = document.createElement('th');
+
+  nameHeader.innerText = 'Name';
+  timeHeader.innerText = 'Timestamp';
+  tbl.id = 'history-table';
+  tbl.appendChild(headers);
+  headers.appendChild(nameHeader);
+  headers.appendChild(timeHeader);
+  headers.appendChild(document.createElement('th'));
+
+  for (let h in twly.history) {
+    let tr = document.createElement('tr');
+    let name = document.createElement('td');
+    let time = document.createElement('td');
+    let load = document.createElement('td');
+    let loadSpan = document.createElement('span');
+    load.classList.add('load');
+    loadSpan.innerHTML = '<a href="#">Load</a>';
+    loadSpan.addEventListener('click', (e) => {
+      displayResults(twly.history[h].results);
+    });
+
+    load.appendChild(loadSpan);
+
+    name.innerText = h;
+    let d = new Date(twly.history[h].timestamp);
+    time.innerText = `${d.toDateString()} ${d.toTimeString()}`;
+    tbl.appendChild(tr);
+    tr.appendChild(name);
+    tr.appendChild(time);
+    tr.appendChild(load);
+  }
+
+  historyWrap.appendChild(tbl);
 }
 
 function validateForm () {
   checkGitAccountExists();
 }
 
+function updateProgress (message, pct = 1) {
+  var msg = document.getElementById('progress-message');
+  var percentIndicator = document.getElementById('pct');
+  msg.textContent = message;
+  percentIndicator.style.width = `${pct}%`;
+}
+
+function getPct () {
+  let currentPctEl = document.getElementById('pct');
+  let currentPct = parseInt(currentPctEl.style.width);
+  return (currentPct + ((33 / numRepos) / 2));
+}
+
+let numRepos = 0;
 function routeWSMessage (msg) {
   let data = JSON.parse(msg.data);
-  console.log(data);
+
   switch (data.title.toLowerCase()) {
     case 'connected': {
-      console.log('says its connected1!');
+      break;
+    }
+    case 'searching for repos': {
+      numRepos = 0;
+      updateProgress(data.title);
       break;
     }
     case 'repos found': {
+      numRepos = data.payload.length;
+      updateProgress(`${data.payload.length} ${data.title}`, 33);
       console.log(data.payload);
       break;
     }
     case 'downloading repos': {
+      updateProgress(data.title, 33);
       console.log(data.payload);
       break;
     }
     case 'downloading repo': {
+      updateProgress(`${data.title} ${data.payload.name}`, getPct());
       console.log(data.payload);
       break;
     }
     case 'repo download success': {
+      updateProgress(`${data.title} ${data.payload.name}`, getPct());
       console.log(data.payload);
       break;
     }
     case 'error downloading repo': {
+      updateProgress(`repo download success ${data.payload.name}`, getPct());
       console.log(data.payload);
       break;
     }
     case 'starting analysis': {
+      updateProgress(`${data.title}`, 66);
       break;
     }  
     case 'analyzing repo': {
+      updateProgress(`${data.title} ${data.payload.name}`, getPct());
       break;
     }
     case 'repo analyzed': {
+      updateProgress(`${data.title} ${data.payload.name}`, getPct());
       break;
     }
     case 'all repos analyzed': {
+      let progress = document.getElementById('progress');
+      updateProgress(`${data.title}`, 100);
+      progress.classList.add('hide');
       break;
     }
     default: {
@@ -70,9 +168,11 @@ function routeWSMessage (msg) {
 }
 
 function runAnalysis (e) {
-  let selected = document.querySelector('[name="accountType"][checked]');
+  let progress = document.getElementById('progress');
+  let results = document.getElementById('results');
+  let selected = Array.from(document.querySelectorAll('[name="accountType"]')).filter((i) => i.checked)[0];
   let http = new XMLHttpRequest();
-  let url = selected.id === 'user' ? '/git/user' : '/git/org';
+  let url = selected.id === 'user' ? '/analyze/user' : '/analyze/org';
   let name = document.getElementById('name');
   let params = "name=" + name.value;
   http.responseType = 'json';
@@ -80,6 +180,8 @@ function runAnalysis (e) {
 
   // Send the proper header information along with the request
   http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+  progress.classList.remove('hide');
 
   http.onreadystatechange = (e) => { // Call a function when the state changes.
     if( http.readyState == 4 && http.status == 200) {
@@ -100,13 +202,16 @@ function storeResults (name, results) {
 
 function checkGitAccountExists () {
   let nameInput = document.getElementById('name');
+  let orgInput = document.getElementById('organization');
+  let isOrg = !!orgInput.checked;
+  const GITHUB_API_BASE = 'https://api.github.com';
   let name = nameInput.value;
-  var validationIcon = nameInput.parentElement.parentElement.querySelector('.validation-icon');
+  let validationIcon = nameInput.parentElement.parentElement.querySelector('.validation-icon');
   // GitHub requires all account names to be atleast 4 characters long
-  if (name.length < 4) { return showInvalid(validationIcon); };
+  // if (name.length < 4) { return showInvalid(validationIcon); };
 
   var http = new XMLHttpRequest();
-  var url = 'https://api.github.com/users/' + name;
+  var url = isOrg ? `${GITHUB_API_BASE}/orgs/${name}` : `${GITHUB_API_BASE}/users/${name}`;
   
   http.responseType = 'json';
   http.open('GET', url, true);
@@ -145,8 +250,17 @@ function showProgress (i) {
  // i.classList.add('show', 'validation-icon', 'fa', 'fa-spin', 'fa-circle-o-notch');
 }
 
-function displayResults (results) {
+function displayNoRepoMessage () {
   let resultContainer = document.getElementById('results');
+  let msg = document.createElement('h2');
+  msg.innerText = 'User has no repos!';
+  resultContainer.appendChild(msg);
+}
+
+function displayResults (results) {
+  if (results.length === 0) { return displayNoRepoMessage(); }
+  let resultContainer = document.getElementById('results');
+  resultContainer.innerHTML = '';
   results.forEach((r) => {
     let resultWrap = document.createElement('div');
     let resultHeading = document.createElement('header');
@@ -164,7 +278,7 @@ function displayResults (results) {
     expandIcon.classList.add('fa', 'fa-plus-square', 'expander');
     messages.classList.add('collapsed');
 
-    repoName.textContent = r.name;
+    repoName.textContent = r.prettyName;
     resultHeading.appendChild(repoName);
     summaryHeading.textContent = 'Summary';
     detailsHeading.textContent = 'Details';
@@ -204,4 +318,6 @@ function displayResults (results) {
       expandIcon.classList.toggle('fa-minus-square');
     });
   });
+
+  resultContainer.classList.remove('hide');
 }

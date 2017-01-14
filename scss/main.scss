@@ -44,7 +44,8 @@ h4 {
 }
 
 pre {
- white-space: pre-line;
+  word-wrap: break-word;
+  white-space: pre-line;
 }
 
 fieldset h4 {
@@ -54,18 +55,56 @@ fieldset h4 {
 }
 
 h1 {
-    margin: 0px;
-    font-size: 48px;
-    font-family: "Droid Sans Mono";
-    color: white;
-    text-transform: uppercase;
-    color: #fff;
-    text-shadow: 1px 1px 0 rgba(0,168,255,0.5), 2px 2px 0 rgba(255, 0, 180, 0.5), 3px 3px 0 rgba(255, 210, 23, 0.5), 4px 4px 0 rgba(0,168,255,0.5), 5px 5px 0 rgba(255, 0, 180, 0.5), 6px 6px 0 rgba(255, 210, 23, 0.5), 7px 7px 0 rgba(0,168,255,0.5), 8px 8px 0 rgba(255, 0, 180, 0.5);
-  }
+  word-wrap: break-word;
+  margin: 0px;
+  font-size: 48px;
+  font-family: "Droid Sans Mono";
+  color: white;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,168,255,0.5), 2px 2px 0 rgba(255, 0, 180, 0.5), 3px 3px 0 rgba(255, 210, 23, 0.5), 4px 4px 0 rgba(0,168,255,0.5), 5px 5px 0 rgba(255, 0, 180, 0.5), 6px 6px 0 rgba(255, 210, 23, 0.5), 7px 7px 0 rgba(0,168,255,0.5), 8px 8px 0 rgba(255, 0, 180, 0.5);
+}
+
+h2 {
+  text-align: center;
+  word-wrap: break-word;
+  margin: 0px;
+  font-size: 36px;
+  font-family: "Droid Sans Mono";
+  color: $red;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 rgba(0,168,255,0.5), 2px 2px 0 rgba(255, 0, 180, 0.5), 3px 3px 0 rgba(255, 210, 23, 0.5), 4px 4px 0 rgba(0,168,255,0.5), 5px 5px 0 rgba(255, 0, 180, 0.5), 6px 6px 0 rgba(255, 210, 23, 0.5), 7px 7px 0 rgba(0,168,255,0.5), 8px 8px 0 rgba(255, 0, 180, 0.5);
+}
+
+h3 {
+  margin-top: 5px;
+}
 
 fieldset {
   border: none;
   position: relative;
+}
+
+#history-icon, #search-icon {
+  font-size: 24px;
+  cursor: pointer;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 1;
+}
+
+#history-table {
+  margin: auto;
+}
+
+td.load {
+  cursor: pointer;
+  > span {
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 #search {
@@ -166,6 +205,10 @@ fieldset {
   background: rgba(255, 40, 100, 0.2);
 }
 
+#progress-message {
+  text-align: center;
+}
+
 .result-wrap {
   padding: 20px;
   margin: 0 auto 20px auto;
@@ -217,14 +260,95 @@ label {
 }
 
 .card {
+  overflow: hidden;
+  position: relative;
   min-width: 200px;
   width: 60%;
   margin: 20px auto;
   padding: 20px;
-
   background: rgba(255, 255, 255, 0.2);
 }
 
 .card.no-bg {
   background: none;
+}
+
+.meter {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  height: 20px;
+  position: relative;
+  background: #555;
+  -moz-border-radius: 25px;
+  -webkit-border-radius: 25px;
+  border-radius: 25px;
+  padding: 10px;
+  -webkit-box-shadow: inset 0 -1px 1px rgba(255,255,255,0.3);
+  -moz-box-shadow: inset 0 -1px 1px rgba(255,255,255,0.3);
+  box-shadow: inset 0 -1px 1px rgba(255,255,255,0.3);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  -webkit-border-top-right-radius: 8px;
+  -webkit-border-bottom-right-radius: 8px;
+  -moz-border-radius-topright: 8px;
+  -moz-border-radius-bottomright: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  -webkit-border-top-left-radius: 20px;
+  -webkit-border-bottom-left-radius: 20px;
+  -moz-border-radius-topleft: 20px;
+  -moz-border-radius-bottomleft: 20px;
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  background-color: rgb(43,194,83);
+  background-image: -webkit-gradient( linear, left bottom, left top, color-stop(0, rgb(43,194,83)), color-stop(1, #2196f3) );
+  background-image: -moz-linear-gradient( center bottom, rgb(43,194,83) 37%, #2196f3 69% );
+  -webkit-box-shadow: inset 0 2px 9px rgba(255,255,255,0.3), inset 0 -2px 6px rgba(0,0,0,0.4);
+  -moz-box-shadow: inset 0 2px 9px rgba(255,255,255,0.3), inset 0 -2px 6px rgba(0,0,0,0.4);
+  box-shadow: inset 0 2px 9px rgba(255,255,255,0.3), inset 0 -2px 6px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.meter > span:after, .animate > span > span {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, rgba(255, 255, 255, .2)), color-stop(.25, transparent), color-stop(.5, transparent), color-stop(.5, rgba(255, 255, 255, .2)), color-stop(.75, rgba(255, 255, 255, .2)), color-stop(.75, transparent), to(transparent) );
+    background-image: -moz-linear-gradient( -45deg, rgba(255, 255, 255, .2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .2) 50%, rgba(255, 255, 255, .2) 75%, transparent 75%, transparent );
+    z-index: 1;
+    -webkit-background-size: 50px 50px;
+    -moz-background-size: 50px 50px;
+    background-size: 50px 50px;
+    -webkit-animation: move 2s linear infinite;
+    -moz-animation: move 2s linear infinite;
+    -webkit-border-top-right-radius: 8px;
+    -webkit-border-bottom-right-radius: 8px;
+    -moz-border-radius-topright: 8px;
+    -moz-border-radius-bottomright: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    -webkit-border-top-left-radius: 20px;
+    -webkit-border-bottom-left-radius: 20px;
+    -moz-border-radius-topleft: 20px;
+    -moz-border-radius-bottomleft: 20px;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    overflow: hidden;
+}
+
+.hide {
+  display: none;
+}
+
+@keyframes move {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
 }

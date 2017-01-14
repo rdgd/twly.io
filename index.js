@@ -7,6 +7,8 @@ const fs = require('fs');
 const unzip = require('unzip');
 const uuid = require('uuid/v4');
 const WebSocketServer = require('ws').Server;
+const child_process = require('child_process');
+const GITHUB_API_BASE = 'https://api.github.com';
 var userWebsockets = {};
 
 var wss = new WebSocketServer({ port: 8081 });
@@ -22,7 +24,8 @@ wss.on('connection', function connection(ws) {
 });
 
 function parseUserIdFromCookie (cookie) {
-  let userId = /twly\-uuid=([^;]+)/.exec(cookie)[1];
+  let c = /twly\-uuid=([^;]+)/.exec(cookie)
+  let userId = c ? c[1] : '';
   return userId;
 }
 
@@ -34,7 +37,7 @@ function sendWsMessage (userId, title, payload = {}) {
 function gitAccountRepoMeta (name, type = 'users') {
   return new Promise((accept, reject) => {
     var options = {
-      url: `https://api.github.com/${type}/${name}/repos`,
+      url: `${GITHUB_API_BASE}/${type}/${name}/repos`,
       headers: { 'User-Agent': 'twly' }
     };
     request(options, function (error, response, body) {
@@ -47,9 +50,9 @@ function makeRepoArchiveUrls (repoMeta) {
   return new Map(repoMeta.filter((m) => m.fork === false).map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
 }
 
-function downloadRepos (repoNameUrlMap, userId) {
+function downloadRepos (repoNameUrlMap, userId, accountName) {
   let promises = [];
-  let tmpFolder = './tmp';
+  let tmpFolder = `./tmp/${userId}/${accountName}`;
 
   repoNameUrlMap.forEach((v, k) => {
     var options = {
@@ -58,7 +61,11 @@ function downloadRepos (repoNameUrlMap, userId) {
     };
     let p = new Promise((resolve, reject) => {
       sendWsMessage(userId, 'Downloading repo', { name: k });
-      request(options, function (error, response, body) { if (error) { throw error; } })
+      request(options, function (error, response, body) {
+        if (error) {
+          throw error;
+        }
+      })
         .pipe(unzip.Extract({ path: tmpFolder }))
           .on('error', () => {
             sendWsMessage(userId, 'Error downloading repo', { name: k });
@@ -83,11 +90,13 @@ function runTwly (paths, userId) {
       twly({
         minLines: 3,
         files: `${v}/**/*.*`,
-        failureThreshold: 100,
+        failureThreshold: 95,
         logLevel: 'FATAL'
       }).then((report) => {
         report.name = v;
+        // let repoName = k.substring(k.indexOf(userId + '/') + (userId.length + 1));
         sendWsMessage(userId, 'Repo analyzed', { name: k, report: report });
+        report.prettyName = k;
         resolve(report);
       });
     });
@@ -105,35 +114,52 @@ function parsePost (req) {
   })
 }
 
+function cleanupTmp (userId, accountName) {
+  child_process.exec(`rm -rf ./tmp/${userId} -y`, (err, stdout, stderr) => {
+    console.log(err);
+    console.log(stdout);
+    console.log(stderr);
+  });
+}
+
+function analyze (userId, accountName, accountType) {
+    sendWsMessage(userId, 'Searching for repos');
+    return gitAccountRepoMeta(accountName, accountType)
+    .then((meta) => {
+      sendWsMessage(userId, 'repos found', meta);
+      return meta;
+    })
+    .then(makeRepoArchiveUrls)
+    .then((urls) => {
+      sendWsMessage(userId, 'Downloading repos', urls);
+      return downloadRepos(urls, userId, accountName);
+    })
+    .then((repoPaths) => { 
+      sendWsMessage(userId, 'Starting analysis', repoPaths);
+      return runTwly(repoPaths, userId);
+    })
+    .then((reports) => {
+      sendWsMessage(userId, 'All repos analyzed', { reports: reports });
+      cleanupTmp(userId, accountName);
+      return reports;
+    });
+}
+
 function router (req, res) {
+  let userId = parseUserIdFromCookie(req.headers.cookie);
   switch (req.url) {
-    case '/git/user': {
-      let userId = parseUserIdFromCookie(req.headers.cookie);  
+    case '/analyze/user': {
       return parsePost(req)
         .then((params) => {
-          return gitAccountRepoMeta(params.name).then((meta) => {
-            sendWsMessage(userId, 'repos found', meta);
-            return meta;
-          });
-        })
-        .then(makeRepoArchiveUrls)
-        .then((urls) => {
-          sendWsMessage(userId, 'Downloading repos', urls);
-          return downloadRepos(urls, userId);
-        })
-        .then((repoPaths) => { 
-          sendWsMessage(userId, 'Starting analysis', repoPaths);
-          return runTwly(repoPaths, userId);
-        })
-        .then((reports) => {
-          sendWsMessage(userId, 'All repos analyzed', { reports: reports });
-          return reports;
+          return analyze(userId, params.name, 'users');
         });
-
       break;
     }
-    case '/git/org':
-      return 'analyze for a whole git account';
+    case '/analyze/org':
+      return parsePost(req)
+        .then((params) => {
+          return analyze(userId, params.name, 'orgs');
+        });
       break;
     default:
       return 'not found!';
