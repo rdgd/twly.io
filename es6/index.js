@@ -5,10 +5,14 @@ function setHooks () {
   let searchIcon = document.getElementById('search-icon');
   let nameInput = document.getElementById('name');
   let submitBtn = document.getElementById('submit');
+  let slider = document.getElementById('score');
   let radios = Array.from(document.querySelectorAll('[type="radio"]'));
   let ws = new WebSocket('ws://localhost:8081/events');
   ws.onmessage = routeWSMessage;
 
+  slider.addEventListener('change', function (e) {
+    console.log(e.currentTarget.value);
+  })
   historyIcon.addEventListener('click', showHistory);
   searchIcon.addEventListener('click', showSearch);
   nameInput.addEventListener('blur', validateForm);
@@ -252,19 +256,25 @@ function displayNoRepoMessage () {
   let msg = document.createElement('h2');
   msg.innerText = 'User has no repos!';
   resultContainer.appendChild(msg);
+  resultContainer.classList.remove('hide');
 }
 
 function displayResults (results) {
-  if (results.length === 0) { return displayNoRepoMessage(); }
   let resultContainer = document.getElementById('results');
   resultContainer.innerHTML = '';
+  let resultsHeader = document.createElement('h3');
+  resultsHeader.innerText = 'Results';
+  resultContainer.appendChild(resultsHeader);
+  if (results.length === 0) {
+    return displayNoRepoMessage();
+  }
   results.forEach((r) => {
     let resultWrap = document.createElement('div');
     let resultHeading = document.createElement('header');
     let repoName = document.createElement('h1');
-    let summaryHeading = document.createElement('h3');
+    let summaryHeading = document.createElement('h4');
     let expandIcon = document.createElement('i');
-    let detailsHeading = document.createElement('h3');
+    let detailsHeading = document.createElement('h4');
     let messages = document.createElement('ul');
     let summary = document.createElement('table');
     let tableHeaders = document.createElement('tr');
@@ -274,6 +284,7 @@ function displayResults (results) {
     let iconClass = r.pass ? 'fa-check-circle' : 'fa-times-circle';
     icon.classList.add('fa');
     icon.classList.add(iconClass);
+    summary.classList.add('results-table');
 
     resultWrap.classList.add(resultWrapClass, 'result-wrap');
     expandIcon.classList.add('fa', 'fa-plus-square', 'expander');

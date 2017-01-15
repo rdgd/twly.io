@@ -2,11 +2,13 @@ $white: rgba(255,255,255,0.5);
 $gray: gray;
 $gray-tint: #93827F;
 $green:rgba(53, 206, 141, 0.5);
+$green-hover:rgba(53, 206, 141, 0.7);
 $green-light: #BCD8B7;
 $red: firebrick;
 $blue-green: #6BA292;
 $beige: #E0D2C3;
 $highlight-dark: rgba(233, 150, 122, 0.5);
+$highlight-dark-hover: rgba(233, 150, 122, 0.7);
 
 html {
   background: #2196f3; /* fallback for old browsers */
@@ -25,8 +27,11 @@ table {
   border-collapse: collapse;
 }
 
-table, th, td {
+table.results-table {
   border: solid 1px black;
+  th, td {
+    border: solid 1px black;
+  }
 }
 
 th, td {
@@ -37,10 +42,6 @@ th, td {
 hr {
   border: dotted 1px black;
   width: calc(100% - 80px);
-}
-
-h4 {
-  margin: 10px;
 }
 
 pre {
@@ -65,6 +66,10 @@ h1 {
   text-shadow: 1px 1px 0 rgba(0,168,255,0.5), 2px 2px 0 rgba(255, 0, 180, 0.5), 3px 3px 0 rgba(255, 210, 23, 0.5), 4px 4px 0 rgba(0,168,255,0.5), 5px 5px 0 rgba(255, 0, 180, 0.5), 6px 6px 0 rgba(255, 210, 23, 0.5), 7px 7px 0 rgba(0,168,255,0.5), 8px 8px 0 rgba(255, 0, 180, 0.5);
 }
 
+.result-wrap h1 {
+  font-size: 28px;
+}
+
 h2 {
   text-align: center;
   word-wrap: break-word;
@@ -73,11 +78,23 @@ h2 {
   font-family: "Droid Sans Mono";
   color: $red;
   text-transform: uppercase;
-  text-shadow: 1px 1px 0 rgba(0,168,255,0.5), 2px 2px 0 rgba(255, 0, 180, 0.5), 3px 3px 0 rgba(255, 210, 23, 0.5), 4px 4px 0 rgba(0,168,255,0.5), 5px 5px 0 rgba(255, 0, 180, 0.5), 6px 6px 0 rgba(255, 210, 23, 0.5), 7px 7px 0 rgba(0,168,255,0.5), 8px 8px 0 rgba(255, 0, 180, 0.5);
+  text-shadow: 1px 1px 0 rgba(0,168,255,0.5), 2px 2px 0 rgba(255, 0, 180, 0.5);
 }
 
 h3 {
-  margin-top: 5px;
+  margin: 5px 0px 20px 0px;
+  text-align: center;
+  word-wrap: break-word;
+  font-size: 36px;
+  font-family: "Droid Sans Mono";
+  color: rgba(255,215,0, 0.8);
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 darkgoldenrod, 2px 2px 0 darkmagenta, 3px 3px 0 darkgoldenrod, 4px 4px 0 darkmagenta;
+  letter-spacing: 4px;
+}
+
+h4 {
+  margin: 10px 10px 10px 0;
 }
 
 fieldset {
@@ -86,17 +103,35 @@ fieldset {
 }
 
 #history-icon, #search-icon {
-  color: darkgoldenrod;
+  color: rgba(0,0,0,0.5);
   font-size: 24px;
   cursor: pointer;
   position: absolute;
   right: 20px;
   top: 20px;
   z-index: 1;
+  transition: 300ms color;
+  &:hover {
+    color: rgba(0,0,0,1);
+  }
 }
 
 #history-table {
+  border: none;
   margin: auto;
+  text-align: left;
+  th {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  th, td {
+    padding: 15px;
+  }
+
+  tr:first-child {
+    border-bottom: solid 1px black;
+  }
 }
 
 td.load {
@@ -120,7 +155,7 @@ td.load {
   width: 60%;
 }
 
-#name {
+#name, #score {
   font-size: 16px;
   width: 100%;
   max-width: 320px;
@@ -130,6 +165,18 @@ td.load {
   border-radius: 5px;
   transition: 300ms border-color;
   background: rgba(255,255,255,0.5);
+}
+
+#threshold {
+  display: inline-block;
+  padding: 20px;
+}
+
+#score {
+  padding: 10px 0px;
+  margin-left: 0px;
+  //margin-right: 40px;
+  vertical-align: top;
 }
 
 #name-wrap.valid::after {
@@ -152,14 +199,21 @@ td.load {
 
 #submit {
   padding: 20px;
+  text-transform: uppercase;
   border: none;
   border-radius: 5px;
   width: 100%;
   max-width: 300px;
   cursor: pointer;
-  background: $green;
+  background: rgba(53, 206, 141, 0.5);
   outline: none;
   transition: 300ms background;
+  font-weight: bold;
+  font-size: 12px;
+  transition: 300ms background;
+  &:hover {
+    background: rgba(53, 206, 141, 0.7);
+  }
 }
 
 .radios fieldset[disabled], .radios fieldset[disabled] * {
@@ -181,10 +235,12 @@ td.load {
 
 .fa-times-circle {
   color: $red;
+  transition: 300ms color;
 }
 
 .fa-check-circle {
-  color: $green;;
+  color: $green;
+  transition: 300ms color;
 }
 
 .show {
@@ -202,10 +258,24 @@ td.load {
 
 .pass {
   background: rgba(40, 255, 100, 0.2);
+  transition: 300ms background;
+  &:hover {
+    background: rgba(40, 255, 100, 0.3);
+    .fa-check-circle {
+      color: $green-hover;
+    }
+    .fa-times-circle {
+      color: $highlight-dark-hover;
+    }
+  }
 }
 
 .fail {
   background: rgba(255, 40, 100, 0.2);
+  transition: 300ms background;
+  &:hover {
+    background: rgba(255, 40, 100, 0.3);
+  }
 }
 
 #progress-message {
@@ -220,7 +290,7 @@ td.load {
       display: inline-block;
     }
     i {
-      font-size: 36px;
+      font-size: 24px;
       margin-left: 20px;
     }
   }
@@ -250,12 +320,19 @@ td.load {
   -moz-border-radius: 5px;
   margin: 5px auto;
   padding: 15px;
-
+  transition: 300ms background;
+  &:hover {
+    background: $highlight-dark-hover;
+  }
 }
 
 .radios fieldset.selected {
-  background: $green;
+  background: $green-hover;
   border-color:$green;
+  transition: 300ms background;
+  &:hover {
+    background: $green-hover;
+  }
 }
 
 input[type="radio"] {
@@ -269,6 +346,7 @@ label {
   display: inline-block;  
   box-sizing: border-box;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .card {
@@ -279,7 +357,12 @@ label {
   margin: 20px auto;
   padding: 20px;
   background: rgba(255, 255, 255, 0.2);
+  transition: 300ms background;
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
+
 
 .card.no-bg {
   background: none;
