@@ -50,7 +50,7 @@ function makeRepoArchiveUrls (repoMeta) {
   return new Map(repoMeta.filter((m) => m.fork === false).map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
 }
 
-function downloadRepos (repoNameUrlMap, userId, accountName) {
+function downloadRepos (repoNameUrlMap, userId, accountName, analyzeTogether = false) {
   let promises = [];
   let tmpFolder = `./tmp/${userId}/${accountName}`;
 
@@ -78,10 +78,11 @@ function downloadRepos (repoNameUrlMap, userId, accountName) {
     });
     promises.push(p);
   });
-  return Promise.all(promises);
+
+  return analyzeTogether ? [['all repos', tmpFolder]] : Promise.all(promises);
 }
 
-function runTwly (paths, userId) {
+function runTwly (paths, userId, analyzeTogether = false) {
   let reports = [];
   paths = new Map(paths);
   paths.forEach((v, k) => {
@@ -98,6 +99,8 @@ function runTwly (paths, userId) {
         sendWsMessage(userId, 'Repo analyzed', { name: k, report: report });
         report.prettyName = k;
         resolve(report);
+      }).catch((err) => {
+        console.log(err);
       });
     });
     reports.push(p);
@@ -122,7 +125,7 @@ function cleanupTmp (userId, accountName) {
   });
 }
 
-function analyze (userId, accountName, accountType) {
+function analyze (userId, accountName, accountType, analyzeTogether = false) {
     sendWsMessage(userId, 'Searching for repos');
     return gitAccountRepoMeta(accountName, accountType)
     .then((meta) => {
@@ -132,11 +135,11 @@ function analyze (userId, accountName, accountType) {
     .then(makeRepoArchiveUrls)
     .then((urls) => {
       sendWsMessage(userId, 'Downloading repos', urls);
-      return downloadRepos(urls, userId, accountName);
+      return downloadRepos(urls, userId, accountName, analyzeTogether);
     })
     .then((repoPaths) => { 
       sendWsMessage(userId, 'Starting analysis', repoPaths);
-      return runTwly(repoPaths, userId);
+      return runTwly(repoPaths, userId, analyzeTogether);
     })
     .then((reports) => {
       sendWsMessage(userId, 'All repos analyzed', { reports: reports });
@@ -151,14 +154,16 @@ function router (req, res) {
     case '/analyze/user': {
       return parsePost(req)
         .then((params) => {
-          return analyze(userId, params.name, 'users');
+          let together = params.analysisType === 'together';
+          return analyze(userId, params.name, 'users', together);
         });
       break;
     }
     case '/analyze/org':
       return parsePost(req)
         .then((params) => {
-          return analyze(userId, params.name, 'orgs');
+          let together = params.analysisType === 'together';
+          return analyze(userId, params.name, 'orgs', together);
         });
       break;
     default:

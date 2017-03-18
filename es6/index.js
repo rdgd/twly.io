@@ -65,6 +65,18 @@ function populateHistory () {
   headers.appendChild(timeHeader);
   headers.appendChild(document.createElement('th'));
 
+  // It's an object, not an array. An array of objects with a name property would solve this issue.
+  // twly.history.sort((a, b) => {
+  //   let d1 = new Date(a.timestamp);
+  //   let d2 = new Date(b.timestamp);
+  //   if (d1 < d2) {
+  //     return -1;
+  //   } else if (d2 < d1) {
+  //     return 1;
+  //   } else {
+  //     return 0;
+  //   }
+  // });
   for (let h in twly.history) {
     let tr = document.createElement('tr');
     let name = document.createElement('td');
@@ -175,11 +187,12 @@ function runAnalysis (e) {
   let progress = document.getElementById('progress');
   let results = document.getElementById('results');
   let submitBtn = document.getElementById('submit');
+  let analysisType = Array.from(document.querySelectorAll('[name="analysisType"]')).filter((i) => i.checked)[0].value;
   let selected = Array.from(document.querySelectorAll('[name="accountType"]')).filter((i) => i.checked)[0];
   let http = new XMLHttpRequest();
   let url = selected.id === 'user' ? '/analyze/user' : '/analyze/org';
   let name = document.getElementById('name');
-  let params = "name=" + name.value;
+  let params = `name=${name.value}&analysisType=${analysisType}`;
   http.responseType = 'json';
   http.open("POST", url, true);
   submitBtn.setAttribute('disabled', '');
