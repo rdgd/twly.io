@@ -31,6 +31,7 @@ function parseUserIdFromCookie (cookie) {
 
 function sendWsMessage (userId, title, payload = {}) {
   let ws = userWebsockets[userId];
+  console.log('foo');
   return ws.send(JSON.stringify({ title, payload }));
 }
 
@@ -118,7 +119,7 @@ function parsePost (req) {
 }
 
 function cleanupTmp (userId, accountName) {
-  child_process.exec(`rm -rf ./tmp/${userId} -y`, (err, stdout, stderr) => {
+  child_process.exec(`rm -rf ./tmp/${userId}`, (err, stdout, stderr) => {
     console.log(err);
     console.log(stdout);
     console.log(stderr);
@@ -199,4 +200,4 @@ http.createServer((req, res) => {
     // userWebsockets[userId] = {};
     fs.createReadStream('./index.html').pipe(res);
   }
-}).listen(3000);
+}).listen(8080);

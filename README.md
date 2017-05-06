@@ -22,3 +22,7 @@ TODO:
 4. Analyzing (33%)
     - Individual repos (33/n repos)
 5. DONE!
+
+## Developing With Docker
+From the project directory, locally:
+`docker run -p 8080:8080 -p 8081:8081 -v $(pwd):/usr/src/app/ taas`

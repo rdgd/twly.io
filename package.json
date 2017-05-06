@@ -6,7 +6,8 @@
   "scripts": {
     "build:scss": "node-sass --include-path scss scss/main.scss assets/css/main.css",
     "build:js": "webpack",
-    "build": "npm run build:scss && npm run build:js"
+    "build": "npm run build:scss && npm run build:js",
+    "docker:up": "docker run -p 8080:8080 -p 8081:8081 -v $(pwd):/usr/src/app/ --name taas taas"
   },
   "keywords": [],
   "author": "",

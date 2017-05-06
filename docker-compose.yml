@@ -1,0 +1,16 @@
+version: '2'
+services:
+  nginx:
+    build: ./nginx
+    links:
+        - app:app
+    ports:
+        - "127.0.0.1:80:80"
+        - "127.0.0.1:443:443"
+  app:
+    build: ./
+    volumes:
+        - .:/usr/src/app
+    ports:
+        - "8080:8080"
+        - "8081:8080"
