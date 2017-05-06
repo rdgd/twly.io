@@ -9,11 +9,11 @@ const uuid = require('uuid/v4');
 const WebSocketServer = require('ws').Server;
 const child_process = require('child_process');
 const GITHUB_API_BASE = 'https://api.github.com';
-var userWebsockets = {};
 
+var userWebsockets = {};
 var wss = new WebSocketServer({ port: 8081 });
  
-wss.on('connection', function connection(ws) {
+wss.on('connection', (ws) => {
   let userId = parseUserIdFromCookie(ws.upgradeReq.headers.cookie);
   userWebsockets[userId] = ws;
   ws.on('message', (message) => {
@@ -36,11 +36,11 @@ function sendWsMessage (userId, title, payload = {}) {
 
 function gitAccountRepoMeta (name, type = 'users') {
   return new Promise((accept, reject) => {
-    var options = {
+    let options = {
       url: `${GITHUB_API_BASE}/${type}/${name}/repos`,
       headers: { 'User-Agent': 'twly' }
     };
-    request(options, function (error, response, body) {
+    request(options, (error, response, body) => {
       (!error && response.statusCode === 200 && accept(JSON.parse(body))) || reject(error);
     });
   });
@@ -55,7 +55,7 @@ function downloadRepos (repoNameUrlMap, userId, accountName, analyzeTogether = f
   let tmpFolder = `./tmp/${userId}/${accountName}`;
 
   repoNameUrlMap.forEach((v, k) => {
-    var options = {
+    let options = {
       url: v.archiveUrl,
       headers: { 'User-Agent': 'twly' }
     };
@@ -199,4 +199,4 @@ http.createServer((req, res) => {
     // userWebsockets[userId] = {};
     fs.createReadStream('./index.html').pipe(res);
   }
-}).listen(8080);
+}).listen(3000);
