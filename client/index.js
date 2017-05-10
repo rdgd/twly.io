@@ -7,7 +7,7 @@ function setHooks () {
   let submitBtn = document.getElementById('submit');
   let slider = document.getElementById('score');
   let radios = Array.from(document.querySelectorAll('[type="radio"]'));
-  let ws = new WebSocket('ws://local.ss.twly.io/events');
+  let ws = new WebSocket('ws://local.twly.io/events');
   ws.onmessage = routeWSMessage;
 
   slider.addEventListener('change', function (e) {

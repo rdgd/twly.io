@@ -11,4 +11,6 @@ run npm run build
 
 EXPOSE 8080
 EXPOSE 8081
+EXPOSE 5858
+
 CMD [ "npm", "start" ]

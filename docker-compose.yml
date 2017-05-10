@@ -13,4 +13,6 @@ services:
         - .:/usr/src/app
     ports:
         - "8080:8080"
-        - "8081:8080"
+        - "8081:8081"
+        - "127.0.0.1:5858:5858"
+    command: "node --debug=5858 server.js"

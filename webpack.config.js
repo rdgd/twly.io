@@ -3,7 +3,7 @@ var path = require('path');
 
 module.exports = {
   context: __dirname + '/',
-  entry: './es6/index.js',
+  entry: './client/index.js',
   output: {
     path: __dirname + '/assets/js',
     filename: 'bundle.js',
@@ -15,7 +15,7 @@ module.exports = {
         // "test" is commonly used to match the file extension
         test: /\.js$/,
         include: [
-          path.resolve(__dirname, "es6")
+          path.resolve(__dirname, "client")
         //  path.resolve(__dirname, "app/test")
         ],
         loader: "babel-loader", // or "babel" because webpack adds the '-loader' automatically

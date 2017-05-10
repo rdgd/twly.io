@@ -14,7 +14,9 @@
   "license": "ISC",
   "dependencies": {
     "font-awesome": "^4.7.0",
+    "fs-extra": "^3.0.1",
     "node-sass": "^4.2.0",
+    "redis": "^2.7.1",
     "request": "^2.79.0",
     "twly": "^3.4.2",
     "unzip": "^0.1.11",

@@ -1,182 +1,18 @@
 const http = require('http');
 const https = require('https');
-const twly = require('twly');
-const qs = require('querystring');
-const request = require('request');
-const fs = require('fs');
-const unzip = require('unzip');
+const fs = require('fs-extra');
 const uuid = require('uuid/v4');
-const WebSocketServer = require('ws').Server;
-const child_process = require('child_process');
-const GITHUB_API_BASE = 'https://api.github.com';
 
-var userWebsockets = {};
-var wss = new WebSocketServer({ port: 8081 });
- 
-wss.on('connection', (ws) => {
-  let userId = parseUserIdFromCookie(ws.upgradeReq.headers.cookie);
-  userWebsockets[userId] = ws;
-  ws.on('message', (message) => {
-    console.log('received: %s', message);
-  });
- 
-  sendWsMessage(userId, 'connected');
-});
+const { parsePost, parseUserIdFromCookie } = require('./src/serverHelpers');
+const sendWsMessage = require('./src/wsServer').sendWsMessage;
+const git = (require('./src/gitService'))(sendWsMessage);
+const analyze = (require('./src/analysisService'))(sendWsMessage, git);
 
-function parseUserIdFromCookie (cookie) {
-  let c = /twly\-uuid=([^;]+)/.exec(cookie)
-  let userId = c ? c[1] : '';
-  return userId;
-}
-
-function sendWsMessage (userId, title, payload = {}) {
-  let ws = userWebsockets[userId];
-  console.log('foo');
-  return ws.send(JSON.stringify({ title, payload }));
-}
-
-function gitAccountRepoMeta (name, type = 'users') {
-  return new Promise((accept, reject) => {
-    let options = {
-      url: `${GITHUB_API_BASE}/${type}/${name}/repos`,
-      headers: { 'User-Agent': 'twly' }
-    };
-    request(options, (error, response, body) => {
-      (!error && response.statusCode === 200 && accept(JSON.parse(body))) || reject(error);
-    });
-  });
-}
-
-function makeRepoArchiveUrls (repoMeta) {
-  return new Map(repoMeta.filter((m) => m.fork === false).map((m) => [ m.name, { archiveUrl: `https://github.com/${m.full_name}/archive/${m.default_branch}.zip`, branch: m.default_branch }]));
-}
-
-function downloadRepos (repoNameUrlMap, userId, accountName, analyzeTogether = false) {
-  let promises = [];
-  let tmpFolder = `./tmp/${userId}/${accountName}`;
-
-  repoNameUrlMap.forEach((v, k) => {
-    let options = {
-      url: v.archiveUrl,
-      headers: { 'User-Agent': 'twly' }
-    };
-    let p = new Promise((resolve, reject) => {
-      sendWsMessage(userId, 'Downloading repo', { name: k });
-      request(options, function (error, response, body) {
-        if (error) {
-          throw error;
-        }
-      })
-        .pipe(unzip.Extract({ path: tmpFolder }))
-          .on('error', () => {
-            sendWsMessage(userId, 'Error downloading repo', { name: k });
-            resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
-          })
-          .on('finish', () => {
-            sendWsMessage(userId, 'Repo download success', { name: k });
-            resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
-          });
-    });
-    promises.push(p);
-  });
-
-  return analyzeTogether ? [['all repos', tmpFolder]] : Promise.all(promises);
-}
-
-function runTwly (paths, userId, analyzeTogether = false) {
-  let reports = [];
-  paths = new Map(paths);
-  paths.forEach((v, k) => {
-    let p = new Promise((resolve, reject) => {
-      sendWsMessage(userId, 'Analyzing repo', { name: k });
-      twly({
-        minLines: 3,
-        files: `${v}/**/*.*`,
-        failureThreshold: 100,
-        logLevel: 'FATAL'
-      }).then((report) => {
-        report.name = v;
-        // let repoName = k.substring(k.indexOf(userId + '/') + (userId.length + 1));
-        sendWsMessage(userId, 'Repo analyzed', { name: k, report: report });
-        report.prettyName = k;
-        resolve(report);
-      }).catch((err) => {
-        console.log(err);
-      });
-    });
-    reports.push(p);
-  });
-
-  return Promise.all(reports);
-}
-
-function parsePost (req) {
-  return new Promise((accept, reject) => {
-    var body = '';
-    req.on('data', (chunk) => body += chunk );
-    req.on('end', () => accept(qs.parse(body)));
-  })
-}
-
-function cleanupTmp (userId, accountName) {
-  child_process.exec(`rm -rf ./tmp/${userId}`, (err, stdout, stderr) => {
-    console.log(err);
-    console.log(stdout);
-    console.log(stderr);
-  });
-}
-
-function analyze (userId, accountName, accountType, analyzeTogether = false) {
-    sendWsMessage(userId, 'Searching for repos');
-    return gitAccountRepoMeta(accountName, accountType)
-    .then((meta) => {
-      sendWsMessage(userId, 'repos found', meta);
-      return meta;
-    })
-    .then(makeRepoArchiveUrls)
-    .then((urls) => {
-      sendWsMessage(userId, 'Downloading repos', urls);
-      return downloadRepos(urls, userId, accountName, analyzeTogether);
-    })
-    .then((repoPaths) => { 
-      sendWsMessage(userId, 'Starting analysis', repoPaths);
-      return runTwly(repoPaths, userId, analyzeTogether);
-    })
-    .then((reports) => {
-      sendWsMessage(userId, 'All repos analyzed', { reports: reports });
-      cleanupTmp(userId, accountName);
-      return reports;
-    });
-}
-
-function router (req, res) {
+let server = http.createServer((req, res) => {
   let userId = parseUserIdFromCookie(req.headers.cookie);
-  switch (req.url) {
-    case '/analyze/user': {
-      return parsePost(req)
-        .then((params) => {
-          let together = params.analysisType === 'together';
-          return analyze(userId, params.name, 'users', together);
-        });
-      break;
-    }
-    case '/analyze/org':
-      return parsePost(req)
-        .then((params) => {
-          let together = params.analysisType === 'together';
-          return analyze(userId, params.name, 'orgs', together);
-        });
-      break;
-    default:
-      return 'not found!';
-      break;
-  }
-}
-
-http.createServer((req, res) => {
   if (req.method === 'POST') {
     // res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
-    router(req)
+    router(req, userId)
       .then((data) => {
         res.write(JSON.stringify(data));
         res.end();
@@ -193,11 +29,31 @@ http.createServer((req, res) => {
   } else {
     if (!parseUserIdFromCookie(req.headers.cookie)) {
       let userId = uuid();
-      res.writeHead(200, {
-        'Set-Cookie': `twly-uuid=${userId}`,
-      });
+      res.writeHead(200, { 'Set-Cookie': `twly-uuid=${userId}` });
     }
-    // userWebsockets[userId] = {};
     fs.createReadStream('./index.html').pipe(res);
   }
 }).listen(8080);
+
+const ws = require('./src/wsServer').init(server);
+
+
+function router (req, userId) {
+  switch (req.url) {
+    case '/analyze/user': {
+      return parsePost(req)
+        .then((params) => {
+          let together = params.analysisType === 'together';
+          return analyze(userId, params.name, 'users', together);
+        });
+    }
+    case '/analyze/org':
+      return parsePost(req)
+        .then((params) => {
+          let together = params.analysisType === 'together';
+          return analyze(userId, params.name, 'orgs', together);
+        });
+    default:
+      return 'not found!';
+  }
+}
