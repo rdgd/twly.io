@@ -10,7 +10,7 @@ RUN npm install
 run npm run build
 
 EXPOSE 8080
-EXPOSE 8081
+EXPOSE 8082
 EXPOSE 5858
 
 CMD [ "npm", "start" ]

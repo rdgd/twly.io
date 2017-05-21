@@ -2,7 +2,7 @@ const twly = require('twly');
 const fs = require('fs-extra');
 
 function cleanupTmp (userId, accountName) {
-  return fs.remove(`./tmp/${userId}`);
+  return fs.emptyDir(`./tmp/${userId}`).then(() => fs.remove(`./tmp/${userId}`));
 }
 
 module.exports = (sendWsMessage, git) => {
@@ -26,7 +26,10 @@ module.exports = (sendWsMessage, git) => {
       sendWsMessage(userId, 'All repos analyzed', { reports: reports });
       return reports;
     })
-    .then((reports) => cleanupTmp(userId, accountName));
+    .then((reports) => { 
+      return cleanupTmp(userId, accountName)
+        .then(() => reports);
+    });
   }
 
   function runTwly (paths, userId, analyzeTogether = false) {
