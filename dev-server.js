@@ -21,14 +21,6 @@ function startDevServer() {
   node.on('close', () =>  console.log('The node process has ended') );
 }
 
-// function runWebpackDev() {
-//   console.log('Starting webpack');
-//   webpack = spawn('npm', ['run', 'build'], { stdio: 'inherit' });
-//   webpack.on('close', () =>  console.log('The webpack process has ended') );
-// }
-
-// runWebpackDev();
-
 watcher.on('ready', () => {
   startDevServer();
   watcher.on('all', startDevServer);

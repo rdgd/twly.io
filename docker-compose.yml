@@ -1,9 +1,21 @@
 version: '2'
 services:
+  # app:
+  #   image: "rdgd/twly_app"
+  #   ports:
+  #       - "8080:8080"
+  #   command: "npm start"
+  # nginx:
+  #   image: "rdgd/twly_nginx"
+  #   links:
+  #       - app:app
+  #   ports:
+  #       - "127.0.0.1:80:80"
+  #       - "127.0.0.1:443:443"
   nginx:
     build: ./nginx
     links:
-        - app:app
+        - app:appdev
     ports:
         - "127.0.0.1:80:80"
         - "127.0.0.1:443:443"
@@ -13,6 +25,5 @@ services:
         - .:/usr/src/app
     ports:
         - "8080:8080"
-        - "8082:8082"
         - "127.0.0.1:5858:5858"
     command: "node dev-server.js"

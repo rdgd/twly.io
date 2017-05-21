@@ -8,35 +8,38 @@ const sendWsMessage = require('./src/wsServer').sendWsMessage;
 const git = (require('./src/gitService'))(sendWsMessage);
 const analyze = (require('./src/analysisService'))(sendWsMessage, git);
 
-let server = http.createServer((req, res) => {
-  let userId = parseUserIdFromCookie(req.headers.cookie);
-  if (req.method === 'POST') {
-    // res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
-    router(req, userId)
-      .then((data) => {
-        res.write(JSON.stringify(data));
-        res.end();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  } else if (/^\/assets\//.test(req.url)) {
-    fs.createReadStream('.' + req.url).pipe(res);
-  } else if (/^\/third_party\//.test(req.url)) {
-    let r = /^\/third_party\/([^\?]+)/.exec(req.url);
-    // We have to strip the get params from the URL that fontawesome includes, and also they assume case-insensitive filesystem.
-    fs.createReadStream('./node_modules/' + r[1].toLowerCase()).pipe(res);
-  } else {
-    if (!parseUserIdFromCookie(req.headers.cookie)) {
-      let userId = uuid();
-      res.writeHead(200, { 'Set-Cookie': `twly-uuid=${userId}` });
+startServer();
+
+function startServer () {
+  let server = http.createServer((req, res) => {
+    let userId = parseUserIdFromCookie(req.headers.cookie);
+    if (req.method === 'POST') {
+      // res.end(fs.readFileSync('./mock_twly.json', 'utf8'));
+      router(req, userId)
+        .then((data) => {
+          res.write(JSON.stringify(data));
+          res.end();
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else if (/^\/assets\//.test(req.url)) {
+      fs.createReadStream('.' + req.url).pipe(res);
+    } else if (/^\/third_party\//.test(req.url)) {
+      let r = /^\/third_party\/([^\?]+)/.exec(req.url);
+      // We have to strip the get params from the URL that fontawesome includes, and also they assume case-insensitive filesystem.
+      fs.createReadStream('./node_modules/' + r[1].toLowerCase()).pipe(res);
+    } else {
+      if (!parseUserIdFromCookie(req.headers.cookie)) {
+        let userId = uuid();
+        res.writeHead(200, { 'Set-Cookie': `twly-uuid=${userId}` });
+      }
+      fs.createReadStream('./index.html').pipe(res);
     }
-    fs.createReadStream('./index.html').pipe(res);
-  }
-}).listen(8080);
+  }).listen(8080);
 
-const ws = require('./src/wsServer').init(server);
-
+  require('./src/wsServer').init(server);
+}
 
 function router (req, userId) {
   switch (req.url) {

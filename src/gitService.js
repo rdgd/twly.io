@@ -35,12 +35,12 @@ module.exports = (sendWsMessage) => {
         })
         .pipe(unzip.Extract({ path: tmpFolder }))
         .on('error', () => {
-                sendWsMessage(userId, 'Error downloading repo', { name: k });
-                resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
+          sendWsMessage(userId, 'Error downloading repo', { name: k });
+          resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
         })
         .on('finish', () => {
-                sendWsMessage(userId, 'Repo download success', { name: k });
-                resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
+          sendWsMessage(userId, 'Repo download success', { name: k });
+          resolve([k, `${tmpFolder}/${k}-${v.branch}`]);
         });
       });
       promises.push(p);
