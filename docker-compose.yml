@@ -5,13 +5,15 @@ services:
   #   ports:
   #       - "8080:8080"
   #   command: "npm start"
+  #   restart: on-failure
   # nginx:
   #   image: "rdgd/twly_nginx"
   #   links:
   #       - app:app
   #   ports:
-  #       - "127.0.0.1:80:80"
-  #       - "127.0.0.1:443:443"
+  #       - "80:80"
+  #       - "443:443"
+  #   restart: on-failure
   nginx:
     build: ./nginx
     links:
@@ -19,6 +21,7 @@ services:
     ports:
         - "127.0.0.1:80:80"
         - "127.0.0.1:443:443"
+    restart: on-failure
   app:
     build: ./
     volumes:
@@ -27,3 +30,4 @@ services:
         - "8080:8080"
         - "127.0.0.1:5858:5858"
     command: "node dev-server.js"
+    restart: on-failure
