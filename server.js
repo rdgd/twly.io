@@ -6,7 +6,8 @@ const uuid = require('uuid/v4');
 const { parsePost, parseUserIdFromCookie } = require('./src/serverHelpers');
 const sendWsMessage = require('./src/wsServer').sendWsMessage;
 const git = (require('./src/gitService'))(sendWsMessage);
-const analyze = (require('./src/analysisService'))(sendWsMessage, git);
+const analyze = (require('./src/analysisService').analyze)(sendWsMessage, git);
+const cleanupTmp = require('./src/analysisService').cleanupTmp;
 
 startServer();
 
@@ -47,7 +48,11 @@ function router (req, userId) {
       return parsePost(req)
         .then((params) => {
           let together = params.analysisType === 'together';
-          return analyze(userId, params.name, 'users', together);
+          return analyze(userId, params.name, 'users', together)
+            .catch((err) => {
+              console.log(err);
+              cleanupTmp(userId, params.name);
+            });
         });
     }
     case '/analyze/org':

@@ -5,7 +5,8 @@ function cleanupTmp (userId, accountName) {
   return fs.emptyDir(`./tmp/${userId}`).then(() => fs.remove(`./tmp/${userId}`));
 }
 
-module.exports = (sendWsMessage, git) => {
+module.exports.cleanupTmp = cleanupTmp;
+module.exports.analyze = (sendWsMessage, git) => {
   function analyze (userId, accountName, accountType, analyzeTogether = false) {
     sendWsMessage(userId, 'Searching for repos');
     return git.gitAccountRepoMeta(accountName, accountType)
@@ -19,8 +20,9 @@ module.exports = (sendWsMessage, git) => {
       return git.downloadRepos(urls, userId, accountName, analyzeTogether);
     })
     .then((repoPaths) => { 
+      repoPaths = repoPaths.filter(r => r);
       sendWsMessage(userId, 'Starting analysis', repoPaths);
-      return runTwly(repoPaths.filter(r => r), userId, analyzeTogether);
+      return runTwly(repoPaths, userId, analyzeTogether);
     })
     .then((reports) => {
       sendWsMessage(userId, 'All repos analyzed', { reports: reports });

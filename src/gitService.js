@@ -1,4 +1,3 @@
-const unzip = require('unzip');
 const request = require('request');
 const GITHUB_API_BASE = 'https://api.github.com';
 const exec = require('child_process').exec;
