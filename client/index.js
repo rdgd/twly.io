@@ -173,8 +173,13 @@ function routeWSMessage (msg) {
     }
     case 'all repos analyzed': {
       let progress = document.getElementById('progress');
+      let submitBtn = document.getElementById('submit');
+      let name = document.getElementById('name');
+      submitBtn.removeAttribute('disabled');
       updateProgress(`${data.title}`, 100);
       progress.classList.add('hide');
+      storeResults(name.value, data.payload.reports);
+      displayResults(data.payload.reports);
       break;
     }
     default: {

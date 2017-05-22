@@ -7,7 +7,6 @@ function init (server) {
   var wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
-    
     let userId = parseUserIdFromCookie(ws.upgradeReq.headers.cookie);
     console.log(`websocket connection made by user ${userId}`);
     userWebsockets[userId] = ws;

@@ -20,7 +20,7 @@ module.exports = (sendWsMessage, git) => {
     })
     .then((repoPaths) => { 
       sendWsMessage(userId, 'Starting analysis', repoPaths);
-      return runTwly(repoPaths, userId, analyzeTogether);
+      return runTwly(repoPaths.filter(r => r), userId, analyzeTogether);
     })
     .then((reports) => {
       sendWsMessage(userId, 'All repos analyzed', { reports: reports });
@@ -36,24 +36,25 @@ module.exports = (sendWsMessage, git) => {
     let reports = [];
     paths = new Map(paths);
     paths.forEach((v, k) => {
-        let p = new Promise((resolve, reject) => {
+      let p = new Promise((resolve, reject) => {
         sendWsMessage(userId, 'Analyzing repo', { name: k });
         twly({
-            minLines: 3,
-            files: `${v}/**/*.*`,
-            failureThreshold: 100,
-            logLevel: 'FATAL'
+          minLines: 3,
+          files: `${v}/**/*.*`,
+          failureThreshold: 100,
+          ignore: [`${v}/.git/**/*.*`],
+          logLevel: 'FATAL'
         }).then((report) => {
-            report.name = v;
-            // let repoName = k.substring(k.indexOf(userId + '/') + (userId.length + 1));
-            sendWsMessage(userId, 'Repo analyzed', { name: k, report: report });
-            report.prettyName = k;
-            resolve(report);
+          report.name = v;
+          // let repoName = k.substring(k.indexOf(userId + '/') + (userId.length + 1));
+          sendWsMessage(userId, 'Repo analyzed', { name: k, report: report });
+          report.prettyName = k;
+          resolve(report);
         }).catch((err) => {
-            console.log(err);
+          console.log(err);
         });
-        });
-        reports.push(p);
+      });
+      reports.push(p);
     });
     return Promise.all(reports);
   }
