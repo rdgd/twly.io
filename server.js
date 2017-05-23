@@ -21,9 +21,7 @@ function startServer () {
           res.write(JSON.stringify(data));
           res.end();
         })
-        .catch((err) => {
-          console.log(err);
-        });
+        .catch((err) => console.log(err));
     } else if (/^\/assets\//.test(req.url)) {
       fs.createReadStream('.' + req.url).pipe(res);
     } else if (/^\/third_party\//.test(req.url)) {

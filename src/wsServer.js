@@ -4,7 +4,7 @@ const WebSocketServer = require('ws').Server;
 var userWebsockets = {};
 
 function init (server) {
-  var wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
     let userId = parseUserIdFromCookie(ws.upgradeReq.headers.cookie);

@@ -1,0 +1,25 @@
+version: '2'
+services:
+  nginx:
+    image: "rdgd/twly_nginx"
+    links:
+        - app1:app1
+        - app2:app2
+        - app3:app3
+        - app4:app4
+    ports:
+        - "80:80"
+        - "443:443"
+    restart: on-failure
+  app1:
+    image: "rdgd/twly_app"
+    restart: on-failure
+  app2:
+    image: "rdgd/twly_app"
+    restart: on-failure
+  app3:
+    image: "rdgd/twly_app"
+    restart: on-failure
+  app4:
+    image: "rdgd/twly_app"
+    restart: on-failure

@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "circular-json": "^0.3.1",
     "font-awesome": "^4.7.0",
     "fs-extra": "^3.0.1",
     "node-sass": "^4.2.0",
